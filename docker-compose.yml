@@ -9,16 +9,6 @@ services:
     networks:
       - analysis-network
 
-  locode-comment-coverage-backendc_api:
-    image: mkapure/app-code-comment-coverage-backend:latest
-    volumes:
-      - ./src:/app/src
-      - shared-repos:/shared/repos
-    ports:
-      - "5020:5006"
-    networks:
-      - analysis-network
-
   mttr_api:
     image: nsulliv7/ser516-mttr:latest
     volumes:
