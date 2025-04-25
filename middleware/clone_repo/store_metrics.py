@@ -1,0 +1,34 @@
+from flask import Flask, request, jsonify
+from database.crud import save_metrics
+from database.connection import MongoDBManager  
+from datetime import datetime
+
+app = Flask(__name__)
+
+@app.route("/store_metrics", methods=["POST"])
+def store_metrics():
+    try:
+        response_json = request.get_json()
+        results = response_json.get("results", {})
+        repo_url = response_json.get("repo_url", "unknown")
+
+        commit = response_json.get("commit_hash", "dummy_commit")
+        project = response_json.get("project_name", "dummy_project")
+        timestamp = datetime.utcnow().isoformat()
+
+        db = MongoDBManager().get_db()
+
+        for metric, content in results.items():
+            if "data" in content:
+                data = content["data"]
+            else:
+                data = {
+                    "error": content.get("error"),
+                    "message": content.get("message")
+                }
+
+            save_metrics(db, metric, project, commit, data, timestamp)
+
+        return jsonify({"message": "Data Stored Successfully."}), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to store data: {e}"}), 500
