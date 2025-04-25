@@ -40,6 +40,19 @@ def get_metrics():
             for future in as_completed(futures):
                 name, result = future.result()
                 results[name] = result
+        
+        store_payload = {
+                "results": results,
+                "repo_url": repo_url,
+                "commit_hash": head_sha,           
+                "project_name": repo_url.split("/")[-1].replace(".git", "")  
+                        }
+        
+        try:
+            store_response = requests.post("http://store_metrics:5007/store_metrics", json=store_payload)
+            store_response.raise_for_status()
+        except Exception as e:
+            print(f"Failed to store metrics: {e}")
 
         return jsonify({"results": results}), 200
     except Exception as e:

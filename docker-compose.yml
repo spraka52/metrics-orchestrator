@@ -97,6 +97,30 @@ services:
     networks:
       - analysis-network
 
+  store_metrics:
+    build:
+      context: .
+      dockerfile: DockerfileStoremetrics
+    ports:
+    - "5007:5007"
+    environment:
+    - MONGO_URI=mongodb://mongo:27017 
+    volumes:
+    - shared-repos:/shared/repos
+    networks:
+    - analysis-network
+    depends_on:
+    - mongo
+  
+
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+    restart: always
+    networks:
+      - analysis-network 
+
 networks:
   analysis-network:
     name: analysis-network
