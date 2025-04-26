@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from database.crud import save_metrics
 from database.db_manager import MongoDBManager
 from datetime import datetime, timezone
+from database.health import check_mongo_health
 
 app = Flask(__name__)
 
@@ -36,6 +37,10 @@ def store_metrics():
         print("Exception occurred:")
         traceback.print_exc()   
         return jsonify({"error": f"Failed to store data: {str(e)}"}), 500
+
+@app.route("/health", methods=["GET"])
+def health_check():
+    return jsonify(check_mongo_health()), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5007)
