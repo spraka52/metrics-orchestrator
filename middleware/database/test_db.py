@@ -1,11 +1,11 @@
-from crud import save_metrics, get_metrics
-from datetime import datetime
+from database.crud import save_metrics, get_metrics
+from datetime import datetime, timezone
 
 project = "https://github.com/test/repo.git"
 commit = "abc123"
 service = "loc"
 data = {"lines": 500, "files": 3}
-timestamp = datetime.utcnow().isoformat()
+timestamp = datetime.now(timezone.utc).isoformat()
 
 print("Saving to MongoDB:")
 save_metrics(service, project, commit, data, timestamp=timestamp)
