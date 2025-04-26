@@ -58,10 +58,6 @@ def get_metrics():
             return _corsify_actual_response(jsonify({"results": results})), 200
     except Exception as e:
         return _corsify_actual_response(jsonify({"message": f"Error occurred while cloning repository or fetching metrics: {e}"})), 500
-    
-@app.route("/", methods=["POST"])
-def health_check():
-    return _corsify_actual_response(jsonify({"status": "OK"})), 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
