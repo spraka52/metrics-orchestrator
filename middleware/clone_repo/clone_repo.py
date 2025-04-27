@@ -31,31 +31,26 @@ def clone_repo(repo_url):
     repo_dir.parent.mkdir(parents=True, exist_ok=True)
 
     lockfile = repo_dir.with_suffix(".lock")
+
+    was_cloned = False 
+
     with open(lockfile, "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
 
         try:
             if repo_dir.exists():
-                git_dir = repo_dir / ".git"
-                if git_dir.exists():
-                    subprocess.run(
-                        ["git", "-C", str(repo_dir), "pull"],
-                        capture_output=True,
-                        text=True,
-                        check=True
-                    )
-                else:
-                    subprocess.run(["rm", "-rf", str(repo_dir)], check=True)
-                    subprocess.run(["git", "clone", repo_url, str(repo_dir)], check=True)
+                was_cloned = False   
+                subprocess.run(["rm", "-rf", str(repo_dir)], check=True)
+                subprocess.run(["git", "clone", repo_url, str(repo_dir)], check=True)
             else:
                 subprocess.run(["git", "clone", repo_url, str(repo_dir)], check=True)
+                was_cloned = True    # cloned
 
             repo        = git.Repo(str(repo_dir))
             head_commit = repo.head.commit
             head_sha    = head_commit.hexsha
-            head_ts_iso = head_commit.committed_datetime.astimezone(
-                timezone.utc
-            ).isoformat()
+            head_ts_iso = head_commit.committed_datetime.astimezone(timezone.utc).date().isoformat()
+
 
         except subprocess.CalledProcessError as e:
             error_output = e.stderr.lower() if e.stderr else ""
@@ -68,7 +63,7 @@ def clone_repo(repo_url):
         except Exception as e:
             raise RuntimeError(f"Unexpected error: {str(e)}")
 
-    return head_sha, head_ts_iso, str(repo_dir)
+    return head_sha, head_ts_iso, str(repo_dir), was_cloned
 
 
 async def replay_history_and_store(repo_dir: str,
@@ -124,7 +119,7 @@ async def replay_history_and_store(repo_dir: str,
     final_commits.reverse()
 
 
-    #logging.info(f"Commits to replay: {final_commits}")
+    # logging.info(f"Commits to replay: {final_commits}")
 
     try:
         for ts, sha in final_commits:
