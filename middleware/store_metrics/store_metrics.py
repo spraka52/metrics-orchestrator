@@ -14,7 +14,7 @@ def store_metrics():
         results = response_json.get("results", {})
         commit = response_json.get("commit_hash", "dummy_commit")
         project = response_json.get("project_name", "dummy_project")
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = response_json.get("timestamp", None)
 
         db = MongoDBManager().get_db()
 
