@@ -100,6 +100,7 @@ services:
       - CYCLO_NAME=${CYCLO_NAME}
       - HAL_NAME=${HAL_NAME}
       - ICI_NAME=${ICI_NAME}
+      - MONGO_URI=mongodb://mongo:27017
       - STORE_METRICS_URL=http://store_metrics:5007/store_metrics
     volumes:
       - shared-repos:/shared/repos
