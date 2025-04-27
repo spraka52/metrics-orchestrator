@@ -9,7 +9,6 @@ app = Flask(__name__)
 def store_metrics():
     try:
         response_json = request.get_json()
-        print("Received data:", response_json)
 
         results = response_json.get("results", {})
         commit = response_json.get("commit_hash", "dummy_commit")
@@ -19,7 +18,6 @@ def store_metrics():
         db = MongoDBManager().get_db()
 
         for metric, content in results.items():
-            print(f"Saving metric: {metric}, content: {content}")
             if "data" in content:
                 data = content["data"]
             else:
