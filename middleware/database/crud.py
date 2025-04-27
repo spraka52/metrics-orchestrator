@@ -10,7 +10,8 @@ def save_metrics(db, service, project, commit, data, timestamp):
             "projectName": project,
             "commitHash": commit,
             "data": data,
-            "timestamp": timestamp
+            "timestamp": timestamp,
+            "default_benchmark": '10',
         }},
         upsert=True
     )
