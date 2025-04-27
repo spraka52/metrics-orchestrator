@@ -1,6 +1,7 @@
 import os, asyncio, httpx
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, HTTPException,Query
 from pydantic import BaseModel
+from middleware.database.crud import get_metrics
 from middleware.clone_repo.clone_repo import clone_repo, replay_history_and_store
 import middleware.clone_repo.config as config
 
@@ -61,6 +62,16 @@ async def add_repo(req: AddRepoReq, bg: BackgroundTasks):
             )
 
         return {"results": current_results}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+    
+
+@app.get("/get_metrics/", response_model=dict)
+async def get_metrics_api(repo_url: str, metrics: list[str] = Query(...)):
+    try:
+        project_name = repo_url.split("/")[-1].removesuffix(".git")
+        data = get_metrics(project_name, metrics)
+        return {"metrics_data": data}
     except Exception as e:
         raise HTTPException(500, str(e))
 
