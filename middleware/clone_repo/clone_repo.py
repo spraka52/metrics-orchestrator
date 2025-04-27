@@ -4,8 +4,13 @@ import re
 from pathlib import Path
 import fcntl
 import git
-from datetime import timezone
+from datetime import timezone, datetime, timedelta
+import logging
+
 SHARED_BASE_DIR = "/shared/repos"
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 
 def clone_repo(repo_url):
     if not repo_url:
@@ -79,23 +84,50 @@ async def replay_history_and_store(repo_dir: str,
         ["git", "-C", repo_dir, "rev-parse", "--abbrev-ref", "HEAD"],
         text=True
     ).strip()
+    
     # get list of commits (oldest→newest)
     cmd = (
-        f"git -C {repo_dir} log --pretty=format:'%cI|%H' --reverse {head_sha} "
-        "| awk -F'|' '{date = substr($1, 1, 10); commit[date] = $0} "
-        "END {for (d in commit) print commit[d]}' "
-        f"| sort | tail -n {days_back}"
+        f"git -C {repo_dir} log --pretty=format:'%cI|%H' --reverse {head_sha}"
     )
 
     commit_lines = subprocess.check_output(
         ["bash", "-c", cmd],
         text=True
     ).strip().splitlines()
+
     commits: list[tuple[str, str]] = [
-        tuple(line.split("|", 1)) for line in commit_lines
+        tuple(line.split("|", 1)) for line in commit_lines if "|" in line
     ]
+
+    # Build a mapping: date (YYYY-MM-DD) -> latest commit_sha
+    commit_map = {}
+    for ts, sha in commits:
+        date_str = ts.split("T")[0]
+        commit_map[date_str] = sha
+
+    # Build final list for past `days_back` days, filling gaps
+    today = datetime.utcnow().date()
+    final_commits = []
+
+    latest_sha = None
+    for i in range(days_back):
+        day = today - timedelta(days=(days_back - 1 - i))
+        day_str = day.isoformat()
+
+        if day_str in commit_map:
+            latest_sha = commit_map[day_str]
+
+        if latest_sha:
+            final_commits.append((day_str, latest_sha))
+
+
+    final_commits.reverse()
+
+
+    #logging.info(f"Commits to replay: {final_commits}")
+
     try:
-        for ts, sha  in commits:
+        for ts, sha in final_commits:
             subprocess.check_call(["git", "-C", repo_dir, "checkout", "-f", sha])
             await run_metrics_async(repo_url, sha, ts)
     finally:
