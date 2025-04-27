@@ -47,17 +47,19 @@ async def run_all_metrics(repo_url: str, head_sha: str, time_stamp: str):
 @app.post("/add_repo/", response_model=dict)
 async def add_repo(req: AddRepoReq, bg: BackgroundTasks):
     try:
-        head_sha, time_stamp, repo_dir = clone_repo(req.repo_url)        # already pulls latest
+        head_sha, time_stamp, repo_dir, was_cloned = clone_repo(req.repo_url)
         current_results = await run_all_metrics(req.repo_url, head_sha, time_stamp)
-        # async history
-        bg.add_task(
-            replay_history_and_store,
-            repo_dir,
-            req.repo_url,
-            head_sha,
-            90,
-            run_all_metrics        # callback
-        )
+
+        if was_cloned:
+            bg.add_task(
+                replay_history_and_store,
+                repo_dir,
+                req.repo_url,
+                head_sha,
+                90,
+                run_all_metrics
+            )
+
         return {"results": current_results}
     except Exception as e:
         raise HTTPException(500, str(e))
