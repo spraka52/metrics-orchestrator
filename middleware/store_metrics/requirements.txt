@@ -1,0 +1,4 @@
+flask
+GitPython
+requests
+pymongo
