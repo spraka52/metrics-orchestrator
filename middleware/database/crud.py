@@ -5,7 +5,7 @@ from .models import get_collection
 def save_metrics(db, service, project, commit, data, timestamp):
     coll = get_collection(db, service)
     coll.update_one(
-        {"projectName": project, "commitHash": commit},
+        {"projectName": project, "commitHash": commit, "timestamp": timestamp},
         {"$set": {
             "projectName": project,
             "commitHash": commit,
@@ -14,6 +14,7 @@ def save_metrics(db, service, project, commit, data, timestamp):
         }},
         upsert=True
     )
+
 
 def get_metrics(service, project, commit):
     db = MongoDBManager().get_db()
