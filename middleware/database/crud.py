@@ -14,8 +14,6 @@ def save_metrics(db, service, project, commit, data, timestamp):
         }},
         upsert=True
     )
-
-
 def get_metrics(service, project, commit):
     db = MongoDBManager().get_db()
     coll = get_collection(db, service)
