@@ -17,17 +17,16 @@ def save_metrics(db, service, project, commit, data, timestamp):
         upsert=True
     )
 
-def get_metrics(project_name: str, selected_metrics: list[str]):
+def get_metrics(project_name: str, selected_metric: str):
     db = MongoDBManager().get_db()
     all_data = {}
 
-    for metric in selected_metrics:
-        coll = get_collection(db, metric)
-        docs = list(coll.find({"projectName": project_name}))
-        for doc in docs:
-            if "_id" in doc:
-                doc["_id"] = str(doc["_id"])
+    coll = get_collection(db, selected_metric)
+    docs = list(coll.find({"projectName": project_name}))
+    for doc in docs:
+        if "_id" in doc:
+            doc["_id"] = str(doc["_id"])
 
-        all_data[metric] = docs  
+    all_data[selected_metric] = docs  
     
     return all_data
