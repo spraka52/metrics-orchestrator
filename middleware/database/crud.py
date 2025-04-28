@@ -22,16 +22,22 @@ def save_metrics(service, project, commit, data, timestamp):
         print(f"[MongoDB] Failed to save metrics: {e}")
 
 def get_metrics(project_name: str, selected_metrics: list[str]):
-    db = MongoDBManager().get_db()
-    all_data = {}
+    try:
 
-    for metric in selected_metrics:
-        coll = get_collection(db, metric)
-        docs = list(coll.find({"projectName": project_name}))
-        for doc in docs:
-            if "_id" in doc:
-                doc["_id"] = str(doc["_id"])
+        db = MongoDBManager().get_db()
+        all_data = {}
 
-        all_data[metric] = docs  
+        for metric in selected_metrics:
+            coll = get_collection(db, metric)
+            docs = list(coll.find({"projectName": project_name}))
+            for doc in docs:
+                if "_id" in doc:
+                    doc["_id"] = str(doc["_id"])
+
+            all_data[metric] = docs  
+        
+        return all_data
     
-    return all_data
+    except PyMongoError as e:
+        print(f"[MongoDB] Failed to get metrics: {e}")
+        return None
