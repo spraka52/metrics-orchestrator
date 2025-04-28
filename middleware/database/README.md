@@ -42,3 +42,11 @@ Run your database container on the same network to test:
 ```bash
 docker run --network test-net test-db
 ```
+
+### Step 6: Test the health check 
+
+Open your browser and go to: 
+http://localhost:5007/health 
+
+Using curl, run this commsnd:
+curl http://localhost:5007/health 
