@@ -1,5 +1,6 @@
 import os, asyncio, httpx
 from fastapi import FastAPI, BackgroundTasks, HTTPException,Query
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from middleware.database.crud import get_metrics
 from middleware.clone_repo.clone_repo import clone_repo, replay_history_and_store
@@ -15,6 +16,13 @@ class AddRepoReq(BaseModel):
     repo_url: str
 
 app = FastAPI(title="metrics-orchestrator-gateway")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def build_service_map() -> dict[str, str]:
     return {os.getenv(f"{svc}_PORT"): os.getenv(f"{svc}_NAME")
@@ -67,10 +75,15 @@ async def add_repo(req: AddRepoReq, bg: BackgroundTasks):
     
 
 @app.get("/get_metrics/", response_model=dict)
-async def get_metrics_api(repo_url: str, metrics: list[str] = Query(...)):
+async def get_metrics_api(repo_url: str, metrics: str = Query(...)):
     try:
+        selected_metrics = metrics.split(",")
         project_name = repo_url.split("/")[-1].removesuffix(".git")
-        data = get_metrics(project_name, metrics)
+        data = []
+        for i in range(len(selected_metrics)):
+            metric = selected_metrics[i]
+            data.append(get_metrics(project_name, metric))
+        # data = get_metrics(project_name, metrics)
         return {"metrics_data": data}
     except Exception as e:
         raise HTTPException(500, str(e))
