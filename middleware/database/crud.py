@@ -2,8 +2,8 @@ from .db_manager import MongoDBManager
 from .models import get_collection
 from bson import ObjectId
 
-
-def save_metrics(db, service, project, commit, data, timestamp):
+def save_metrics(db,service, project, commit, data, timestamp):
+    db = MongoDBManager().get_db()
     coll = get_collection(db, service)
     coll.update_one(
         {"projectName": project, "commitHash": commit, "timestamp": timestamp},
