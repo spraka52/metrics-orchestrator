@@ -9,6 +9,16 @@ services:
     networks:
       - analysis-network
 
+  locode-comment-coverage-backendc_api:
+    image: mkapure/app-code-comment-coverage-backend:latest
+    volumes:
+      - ./src:/app/src
+      - shared-repos:/shared/repos
+    ports:
+      - "5020:5006"
+    networks:
+      - analysis-network
+
   mttr_api:
     image: nsulliv7/ser516-mttr:latest
     volumes:
@@ -63,40 +73,6 @@ services:
     volumes:
       - shared-repos:/shared/repos
 
-  clone_repo:
-    build:
-      context: .
-      dockerfile: DockerfileMiddleware
-    ports:
-      - "${GATEWAY_PORT}:5000"
-    environment:
-      - CC_PORT=${CC_PORT}
-      - LOC_PORT=${LOC_PORT}
-      - MTTR_PORT=${MTTR_PORT}
-      - DEFECTS_PORT=${DEFECTS_PORT}
-      - CYCLO_PORT=${CYCLO_PORT}
-      - HAL_PORT=${HAL_PORT}
-      - ICI_PORT=${ICI_PORT}
-      - CC_NAME=${CC_NAME}
-      - LOC_NAME=${LOC_NAME}
-      - MTTR_NAME=${MTTR_NAME}
-      - DEFECTS_NAME=${DEFECTS_NAME}
-      - CYCLO_NAME=${CYCLO_NAME}
-      - HAL_NAME=${HAL_NAME}
-      - ICI_NAME=${ICI_NAME}
-    depends_on:
-      - loc_api
-      - cc_api
-      - cyclo_api
-      - hal_api
-      - ici_api
-      - mttr_api
-      - defects_api
-    volumes:
-      - shared-repos:/shared/repos
-    networks:
-      - analysis-network
-
   store_metrics:
     build:
       context: .
@@ -112,6 +88,44 @@ services:
     depends_on:
     - mongo
   
+  api_gateway:
+    build:
+      context: .
+      dockerfile: DockerfileGateway
+    ports:
+      - "${GATEWAY_PORT}:8080"
+    environment:
+      - GATEWAY_PORT=${GATEWAY_PORT}
+      - CC_PORT=${CC_PORT}
+      - LOC_PORT=${LOC_PORT}
+      - MTTR_PORT=${MTTR_PORT}
+      - DEFECTS_PORT=${DEFECTS_PORT}
+      - CYCLO_PORT=${CYCLO_PORT}
+      - HAL_PORT=${HAL_PORT}
+      - ICI_PORT=${ICI_PORT}
+      - CC_NAME=${CC_NAME}
+      - LOC_NAME=${LOC_NAME}
+      - MTTR_NAME=${MTTR_NAME}
+      - DEFECTS_NAME=${DEFECTS_NAME}
+      - CYCLO_NAME=${CYCLO_NAME}
+      - HAL_NAME=${HAL_NAME}
+      - ICI_NAME=${ICI_NAME}
+      - MONGO_URI=mongodb://mongo:27017
+      - STORE_METRICS_URL=http://store_metrics:5007/store_metrics
+    volumes:
+      - shared-repos:/shared/repos
+    networks:
+      - analysis-network
+    depends_on:
+      - loc_api
+      - cc_api
+      - cyclo_api
+      - hal_api
+      - ici_api
+      - mttr_api
+      - defects_api
+      - store_metrics
+      - mongo
 
   mongo:
     image: mongo
