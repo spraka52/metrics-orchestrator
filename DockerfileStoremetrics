@@ -7,6 +7,6 @@ COPY middleware/database ./database
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 5007
+EXPOSE 5000
 
 CMD ["python", "store_metrics.py"]

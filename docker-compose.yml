@@ -1,73 +1,48 @@
 services:
-  loc_api:
+  loc:
     image: nsulliv7/ser516-loc:latest
     volumes:
-      - ./src:/app/src
       - shared-repos:/shared/repos
-    ports:
-      - "${LOC_PORT}:5002"
     networks:
       - analysis-network
 
-  locode-comment-coverage-backendc_api:
-    image: mkapure/app-code-comment-coverage-backend:latest
-    volumes:
-      - ./src:/app/src
-      - shared-repos:/shared/repos
-    ports:
-      - "5020:5006"
-    networks:
-      - analysis-network
-
-  mttr_api:
+  mttr:
     image: nsulliv7/ser516-mttr:latest
     volumes:
-      - ./src:/app/src
       - shared-repos:/shared/repos
-    ports:
-      - "${MTTR_PORT}:5003"
     networks:
       - analysis-network
 
-  cc_api:
+  cc:
     image: nsulliv7/ser516-cc:latest
     volumes:
-      - ./src:/app/src
       - shared-repos:/shared/repos
-    ports:
-      - "${CC_PORT}:5001"
     networks:
       - analysis-network
 
-  defects_api:
+  defects-over-time:
     image: nsulliv7/ser516-defects-over-time:latest
-    ports:
-      - "${DEFECTS_PORT}:5004"
     networks:
       - analysis-network
+    volumes:
+      - shared-repos:/shared/repos
 
-  cyclo_api:
+  cyclo:
     image: nsulliv7/ser516-cyclo:latest
-    ports:
-      - "${CYCLO_PORT}:5005"
     networks:
       - analysis-network
     volumes:
       - shared-repos:/shared/repos
 
-  hal_api:
+  hal:
     image: nsulliv7/ser516-hal:latest
-    ports:
-      - "${HAL_PORT}:5006"
     networks:
       - analysis-network
     volumes:
       - shared-repos:/shared/repos
 
-  ici_api:
+  ici:
     image: nsulliv7/ser516-ici:latest
-    ports:
-      - "${ICI_PORT}:5009"
     networks:
       - analysis-network
     volumes:
@@ -77,53 +52,35 @@ services:
     build:
       context: .
       dockerfile: DockerfileStoremetrics
-    ports:
-    - "5007:5007"
     environment:
-    - MONGO_URI=mongodb://mongo:27017 
-    volumes:
-    - shared-repos:/shared/repos
-    networks:
-    - analysis-network
-    depends_on:
-    - mongo
-  
-  api_gateway:
-    build:
-      context: .
-      dockerfile: DockerfileGateway
-    ports:
-      - "${GATEWAY_PORT}:8080"
-    environment:
-      - GATEWAY_PORT=${GATEWAY_PORT}
-      - CC_PORT=${CC_PORT}
-      - LOC_PORT=${LOC_PORT}
-      - MTTR_PORT=${MTTR_PORT}
-      - DEFECTS_PORT=${DEFECTS_PORT}
-      - CYCLO_PORT=${CYCLO_PORT}
-      - HAL_PORT=${HAL_PORT}
-      - ICI_PORT=${ICI_PORT}
-      - CC_NAME=${CC_NAME}
-      - LOC_NAME=${LOC_NAME}
-      - MTTR_NAME=${MTTR_NAME}
-      - DEFECTS_NAME=${DEFECTS_NAME}
-      - CYCLO_NAME=${CYCLO_NAME}
-      - HAL_NAME=${HAL_NAME}
-      - ICI_NAME=${ICI_NAME}
       - MONGO_URI=mongodb://mongo:27017
-      - STORE_METRICS_URL=http://store_metrics:5007/store_metrics
     volumes:
       - shared-repos:/shared/repos
     networks:
       - analysis-network
     depends_on:
-      - loc_api
-      - cc_api
-      - cyclo_api
-      - hal_api
-      - ici_api
-      - mttr_api
-      - defects_api
+      - mongo
+
+  middleware:
+    build:
+      context: .
+      dockerfile: DockerfileGateway
+    ports:
+      - "${GATEWAY_PORT}:5000"
+    environment:
+      - SERVICES=cc,loc,mttr,defects-over-time,cyclo,hal,ici
+    volumes:
+      - shared-repos:/shared/repos
+    networks:
+      - analysis-network
+    depends_on:
+      - loc
+      - cc
+      - cyclo
+      - hal
+      - ici
+      - mttr
+      - defects-over-time
       - store_metrics
       - mongo
 
@@ -133,7 +90,7 @@ services:
       - "27017:27017"
     restart: always
     networks:
-      - analysis-network 
+      - analysis-network
 
 networks:
   analysis-network:
