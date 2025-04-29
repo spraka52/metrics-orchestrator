@@ -32,7 +32,7 @@ jobs:
           IMAGE_NAME=${DOCKERHUB_USERNAME}/ser516-middleware:${RELEASE_TAG}
           docker build \
             -t "$IMAGE_NAME" \
-            -f DockerfileMiddleware \
+            -f DockerfileGateway \
             .
 
       - name: Push Docker image
