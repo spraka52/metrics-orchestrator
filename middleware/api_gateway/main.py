@@ -1,16 +1,14 @@
-import os, asyncio, httpx
-from fastapi import FastAPI, BackgroundTasks, HTTPException,Query
+import os
+import asyncio
+import httpx
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from middleware.database.crud import get_metrics
 from middleware.clone_repo.clone_repo import clone_repo, replay_history_and_store
-import middleware.clone_repo.config as config
 
 GATEWAY_PORT = int(os.getenv("GATEWAY_PORT", 8080))
-STORE_METRICS_URL = os.getenv(
-    "STORE_METRICS_URL",            # read from env
-    "http://store_metrics:5007/store_metrics",   # fallback
-)
+STORE_METRICS_URL = os.getenv("STORE_METRICS_URL", "http://store_metrics:5000/store_metrics")
 
 class AddRepoReq(BaseModel):
     repo_url: str
@@ -24,36 +22,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def build_service_map() -> dict[str, str]:
-    return {os.getenv(f"{svc}_PORT"): os.getenv(f"{svc}_NAME")
-            for svc in config.services_list}
+def load_service_config() -> dict[str, str]:
+    services_raw = os.getenv("SERVICES")
+    if not services_raw:
+        raise Exception("SERVICES environment variable not set")
+    
+    service_mapping = {}
+    services = services_raw.split(",")
+    for service in services:
+        service_mapping[service] = service.replace("/", "-")
+    return service_mapping
 
-async def call_metric(name: str, port: str, payload: dict, client: httpx.AsyncClient):
+async def call_metric(service_name: str, payload: dict, client: httpx.AsyncClient):
     try:
-        url = f"{config.endpoint_prefix}{name}_api:{port}/{name}"
+        url = f"http://{service_name}:5000/{service_name}"
         resp = await client.post(url, json=payload, timeout=120)
-        return name, resp.json()
+        return service_name, resp.json()
     except Exception as e:
-        return name, {"error": str(e)}
+        return service_name, {"error": str(e)}
 
 async def run_all_metrics(repo_url: str, head_sha: str, time_stamp: str):
-    payload = {config.payload_key: repo_url}
-    services = build_service_map()
+    payload = {"repo_url": repo_url}
+    services = load_service_config()
+
     async with httpx.AsyncClient() as client:
-        tasks = [call_metric(n, p, payload, client) for p, n in services.items()]
-        results = dict(await asyncio.gather(*tasks))
+        tasks = [call_metric(service_name, payload, client) for service_name in services.values()]
+        results_list = await asyncio.gather(*tasks)
+        results = dict(results_list)
+
+    project_name = repo_url.split("/")[-1].removesuffix(".git")
     store_payload = {
         "results": results,
         "repo_url": repo_url,
         "commit_hash": head_sha,
         "timestamp": time_stamp,
-        "project_name": repo_url.split("/")[-1].removesuffix(".git")
+        "project_name": project_name
     }
     async with httpx.AsyncClient() as client:
         await client.post(STORE_METRICS_URL, json=store_payload, timeout=120)
     return results
 
-@app.post("/add_repo/", response_model=dict)
+@app.post("/add_repo", response_model=dict)
 async def add_repo(req: AddRepoReq, bg: BackgroundTasks):
     try:
         head_sha, time_stamp, repo_dir, was_cloned = clone_repo(req.repo_url)
@@ -72,19 +81,13 @@ async def add_repo(req: AddRepoReq, bg: BackgroundTasks):
         return {"results": current_results}
     except Exception as e:
         raise HTTPException(500, str(e))
-    
 
-@app.get("/get_metrics/", response_model=dict)
+@app.get("/get_metrics", response_model=dict)
 async def get_metrics_api(repo_url: str, metrics: str = Query(...)):
     try:
         selected_metrics = metrics.split(",")
         project_name = repo_url.split("/")[-1].removesuffix(".git")
-        data = []
-        for i in range(len(selected_metrics)):
-            metric = selected_metrics[i]
-            data.append(get_metrics(project_name, metric))
-        # data = get_metrics(project_name, metrics)
+        data = [get_metrics(project_name, metric) for metric in selected_metrics]
         return {"metrics_data": data}
     except Exception as e:
         raise HTTPException(500, str(e))
-

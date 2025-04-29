@@ -1,11 +1,9 @@
 FROM python:3.13
 
-# copy the whole middleware tree so both api_gateway and clone_repo are inside
 COPY middleware /app/middleware
 WORKDIR /app
 
-# install shared requirements for api_gateway
 RUN pip install --no-cache-dir -r /app/middleware/api_gateway/requirements.txt
 
-EXPOSE 8080
-CMD ["uvicorn", "middleware.api_gateway.main:app", "--host", "0.0.0.0", "--port", "8080"]
+EXPOSE 5000
+CMD ["uvicorn", "middleware.api_gateway.main:app", "--host", "0.0.0.0", "--port", "5000"]
