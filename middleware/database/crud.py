@@ -1,32 +1,40 @@
-from .db_manager import MongoDBManager
-from .models import get_collection
+from pymongo.errors import PyMongoError
+from database.db_manager import MongoDBManager
+from database.models import get_collection
 from bson import ObjectId
 
-
-def save_metrics(db, service, project, commit, data, timestamp):
-    coll = get_collection(db, service)
-    coll.update_one(
-        {"projectName": project, "commitHash": commit, "timestamp": timestamp},
-        {"$set": {
-            "projectName": project,
-            "commitHash": commit,
-            "data": data,
-            "timestamp": timestamp,
+def save_metrics(service, project, commit, data, timestamp):
+    try:
+        db = MongoDBManager().get_db()
+        coll = get_collection(db, service)
+        coll.update_one(
+            {"projectName": project, "commitHash": commit, "timestamp": timestamp},
+            {"$set": {
+                "projectName": project,
+                "commitHash": commit,
+                "data": data,
+                "timestamp": timestamp,
             "default_benchmark": '10',
-        }},
-        upsert=True
-    )
+            }},
+            upsert=True
+        )
+    except PyMongoError as e:
+        print(f"[MongoDB] Failed to save metrics: {e}")
 
 def get_metrics(project_name: str, selected_metric: str):
-    db = MongoDBManager().get_db()
-    all_data = {}
+    try:
+        db = MongoDBManager().get_db()
+        all_data = {}
 
-    coll = get_collection(db, selected_metric)
-    docs = list(coll.find({"projectName": project_name}))
-    for doc in docs:
-        if "_id" in doc:
-            doc["_id"] = str(doc["_id"])
+        coll = get_collection(db, selected_metric)
+        docs = list(coll.find({"projectName": project_name}))
+        for doc in docs:
+            if "_id" in doc:
+                doc["_id"] = str(doc["_id"])
 
-    all_data[selected_metric] = docs  
+        all_data[selected_metric] = docs  
     
-    return all_data
+        return all_data
+    except PyMongoError as e:
+        print(f"[MongoDB] Failed to get metrics: {e}")
+        return None
