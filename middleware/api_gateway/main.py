@@ -41,9 +41,13 @@ async def call_metric(service_name: str, payload: dict, client: httpx.AsyncClien
     except Exception as e:
         return service_name, {"error": str(e)}
 
-async def run_all_metrics(repo_url: str, head_sha: str, time_stamp: str):
+async def run_all_metrics(repo_url: str, head_sha: str, time_stamp: str, is_history_mode: bool = False):
     payload = {"repo_url": repo_url}
     services = load_service_config()
+
+    if is_history_mode:
+        # Skip defects-stats in history mode
+        services = {k: v for k, v in services.items() if v != "defects-stats"}
 
     async with httpx.AsyncClient() as client:
         tasks = [call_metric(service_name, payload, client) for service_name in services.values()]
@@ -62,11 +66,12 @@ async def run_all_metrics(repo_url: str, head_sha: str, time_stamp: str):
         await client.post(STORE_METRICS_URL, json=store_payload, timeout=120)
     return results
 
+
 @app.post("/add_repo", response_model=dict)
 async def add_repo(req: AddRepoReq, bg: BackgroundTasks):
     try:
         head_sha, time_stamp, repo_dir, was_cloned = clone_repo(req.repo_url)
-        current_results = await run_all_metrics(req.repo_url, head_sha, time_stamp)
+        current_results = await run_all_metrics(req.repo_url, head_sha, time_stamp, is_history_mode=False)
 
         if was_cloned:
             bg.add_task(
@@ -75,7 +80,7 @@ async def add_repo(req: AddRepoReq, bg: BackgroundTasks):
                 req.repo_url,
                 head_sha,
                 90,
-                run_all_metrics
+                lambda url, sha, ts: run_all_metrics(url, sha, ts, is_history_mode=True)
             )
 
         return {"results": current_results}
