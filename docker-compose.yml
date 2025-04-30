@@ -27,6 +27,13 @@ services:
     volumes:
       - shared-repos:/shared/repos
 
+  defects-stats:
+    image: mkapure/defects-stats:latest
+    networks:
+      - analysis-network
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+
   cyclo:
     image: nsulliv7/ser516-cyclo:latest
     networks:
@@ -68,7 +75,7 @@ services:
     ports:
       - "${GATEWAY_PORT}:5000"
     environment:
-      - SERVICES=cc,loc,mttr,defects-over-time,cyclo,hal,ici
+      - SERVICES=cc,loc,mttr,defects-over-time,cyclo,hal,ici,defects-stats
       - MONGO_URI=mongodb://mongo:27017
       - STORE_METRICS_URL=http://store_metrics:5000/store_metrics
     volumes:
@@ -84,6 +91,7 @@ services:
       - mttr
       - defects-over-time
       - store_metrics
+      - defects-stats
       - mongo
 
   mongo:
