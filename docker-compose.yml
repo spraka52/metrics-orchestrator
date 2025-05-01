@@ -55,6 +55,20 @@ services:
     volumes:
       - shared-repos:/shared/repos
 
+  afferent:
+    image: gopu007/app-afferent-coupling:latest
+    networks:
+      - analysis-network
+    volumes:
+      - shared-repos:/shared/repos
+
+  efferent:
+    image: gopu007/app-efferent-coupling:latest
+    networks:
+      - analysis-network
+    volumes:
+      - shared-repos:/shared/repos
+
   lcom4:
      image: gopu007/app-lcom4:latest
 
@@ -91,7 +105,7 @@ services:
     ports:
       - "${GATEWAY_PORT}:5000"
     environment:
-      - SERVICES=cc,loc,mttr,defects-over-time,cyclo,hal,ici,defects-stats,lcom4,lcomhs
+      - SERVICES=cc,loc,mttr,defects-over-time,cyclo,hal,ici,defects-stats,lcom4,lcomhs,afferent,efferent
       - MONGO_URI=mongodb://mongo:27017
       - STORE_METRICS_URL=http://store_metrics:5000/store_metrics
     volumes:
