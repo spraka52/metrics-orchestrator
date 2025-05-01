@@ -47,7 +47,8 @@ async def run_all_metrics(repo_url: str, head_sha: str, time_stamp: str, is_hist
 
     if is_history_mode:
         # Skip defects-stats in history mode
-        services = {k: v for k, v in services.items() if v != "defects-stats"}
+      excluded_services = {"defects-stats", "defects-over-time", "mttr"}
+      services = {k: v for k, v in services.items() if v not in excluded_services}
 
     async with httpx.AsyncClient() as client:
         tasks = [call_metric(service_name, payload, client) for service_name in services.values()]
