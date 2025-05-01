@@ -63,7 +63,7 @@ services:
       - shared-repos:/shared/repos
   
   defects-triaged:
-    image: mkapure/app-defects-triage:$VERSION
+    image: mkapure/app-defects-triage:latest
     networks:
       - analysis-network
     environment:
