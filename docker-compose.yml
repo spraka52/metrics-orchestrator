@@ -130,9 +130,10 @@ services:
       - defects-over-time
       - store_metrics
       - defects-stats
+      - fogindex
       - lcom4
       - mongo
-      - fogindex
+    
 
   mongo:
     image: mongo
