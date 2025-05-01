@@ -133,7 +133,7 @@ services:
       - fogindex
       - lcom4
       - mongo
-      - fogindex
+    
 
   mongo:
     image: mongo
