@@ -92,6 +92,7 @@ services:
       - defects-over-time
       - store_metrics
       - defects-stats
+      - fogindex
       - mongo
 
   mongo:
